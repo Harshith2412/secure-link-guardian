@@ -1,0 +1,32 @@
+[
+  {
+    "text": "URGENT: Your account has been suspended! Click here immediately to verify your identity.",
+    "label": 1,
+    "urgency_score": 90
+  },
+  {
+    "text": "Security Alert: Unusual activity detected on your account. Verify now to prevent permanent lock.",
+    "label": 1,
+    "urgency_score": 85
+  },
+  {
+    "text": "Your payment failed. Update your billing information within 24 hours to avoid service interruption.",
+    "label": 1,
+    "urgency_score": 75
+  },
+  {
+    "text": "Congratulations! You've won $1000. Claim your prize now - limited time offer!",
+    "label": 1,
+    "urgency_score": 70
+  },
+  {
+    "text": "Thank you for your order. Your package will arrive in 3-5 business days.",
+    "label": 0,
+    "urgency_score": 10
+  },
+  {
+    "text": "Your monthly statement is now available. Log in to view your account details.",
+    "label": 0,
+    "urgency_score": 5
+  }
+]

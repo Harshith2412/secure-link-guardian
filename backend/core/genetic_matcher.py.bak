@@ -1,0 +1,343 @@
+"""
+SecureLink Guardian - Genetic Matcher
+DNA-inspired algorithm for detecting phishing mutations and campaigns
+"""
+
+import logging
+from typing import Dict, List, Optional, Tuple
+from difflib import SequenceMatcher
+import hashlib
+from backend.config import Config
+from backend.models import GeneticAnalysisResult
+
+logger = logging.getLogger(__name__)
+
+
+class GeneticURLMatcher:
+    """
+    DNA-inspired URL matching for phishing detection
+    
+    This module treats URLs as DNA sequences and uses bioinformatics-inspired
+    algorithms to detect mutations, evolutionary relationships, and campaign families.
+    """
+    
+    def __init__(self, config: Config):
+        self.config = config
+        
+        # Known phishing campaign signatures (DNA sequences)
+        self.campaign_signatures = {
+            'amazon-phishing-2024': [
+                'amaz0n', 'amazom', 'amazonn', 'ammazon', 'amajon',
+                'amazon-secure', 'amazon-verify', 'amazon-account'
+            ],
+            'paypal-phishing-2024': [
+                'paypa1', 'paypai', 'paypa', 'paypall', 'paypal-secure',
+                'paypal-verify', 'paypal-suspended'
+            ],
+            'microsoft-phishing-2024': [
+                'micros0ft', 'micrsoft', 'microsft', 'microsoft-login',
+                'microsoft-security', 'microsoft-verify'
+            ],
+            'apple-phishing-2024': [
+                'app1e', 'appl', 'applle', 'apple-id', 'apple-support',
+                'icloud-verify'
+            ],
+            'banking-generic': [
+                'secure-login', 'verify-account', 'update-billing',
+                'confirm-identity', 'suspended-account'
+            ]
+        }
+        
+        # Base pairs for URL "DNA" encoding
+        self.base_pairs = {
+            'a': 0, 'b': 1, 'c': 2, 'd': 3,
+            'e': 0, 'f': 1, 'g': 2, 'h': 3,
+            'i': 0, 'j': 1, 'k': 2, 'l': 3,
+            'm': 0, 'n': 1, 'o': 2, 'p': 3,
+            'q': 0, 'r': 1, 's': 2, 't': 3,
+            'u': 0, 'v': 1, 'w': 2, 'x': 3,
+            'y': 0, 'z': 1, '0': 2, '1': 3,
+            '2': 0, '3': 1, '4': 2, '5': 3,
+            '6': 0, '7': 1, '8': 2, '9': 3,
+            '-': 0, '_': 1, '.': 2
+        }
+    
+    async def analyze(self, url: str, known_legitimate_domains: Optional[List[str]] = None) -> GeneticAnalysisResult:
+        """
+        Perform genetic analysis on URL
+        
+        Args:
+            url: URL to analyze
+            known_legitimate_domains: Optional list of legitimate domains
+            
+        Returns:
+            GeneticAnalysisResult with findings
+        """
+        logger.info(f"Running genetic analysis for: {url}")
+        
+        try:
+            # Extract domain from URL
+            domain = self._extract_domain(url)
+            
+            # Encode URL as DNA sequence
+            dna_sequence = self._encode_as_dna(domain)
+            
+            # Find campaign family
+            campaign_result = self._match_campaign_family(domain)
+            
+            # Calculate similarity to legitimate domains
+            if known_legitimate_domains is None:
+                known_legitimate_domains = self.config.TRUSTED_DOMAINS
+            
+            similarity_result = self._calculate_dna_similarity(
+                domain, 
+                known_legitimate_domains
+            )
+            
+            # Calculate evolutionary distance
+            evo_distance = self._calculate_evolutionary_distance(
+                domain,
+                similarity_result.get('closest_match', '')
+            )
+            
+            # Check pattern matching
+            pattern_match = self._check_mutation_patterns(domain)
+            
+            return GeneticAnalysisResult(
+                dna_similarity_score=similarity_result.get('similarity'),
+                mutation_family=campaign_result.get('family'),
+                known_campaign=campaign_result.get('detected', False),
+                campaign_id=campaign_result.get('campaign_id'),
+                evolutionary_distance=evo_distance,
+                pattern_match=pattern_match
+            )
+            
+        except Exception as e:
+            logger.error(f"Genetic analysis error: {str(e)}")
+            return GeneticAnalysisResult()
+    
+    def _extract_domain(self, url: str) -> str:
+        """Extract domain from URL"""
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        return parsed.netloc.lower()
+    
+    def _encode_as_dna(self, domain: str) -> str:
+        """
+        Encode domain as DNA sequence
+        
+        Maps characters to base pairs (A, T, G, C)
+        
+        Args:
+            domain: Domain to encode
+            
+        Returns:
+            DNA sequence string
+        """
+        bases = ['A', 'T', 'G', 'C']
+        dna_sequence = []
+        
+        for char in domain.lower():
+            if char in self.base_pairs:
+                base_index = self.base_pairs[char]
+                dna_sequence.append(bases[base_index])
+            else:
+                # Unknown character, use hash
+                char_hash = hash(char) % 4
+                dna_sequence.append(bases[char_hash])
+        
+        return ''.join(dna_sequence)
+    
+    def _match_campaign_family(self, domain: str) -> Dict:
+        """
+        Match domain against known phishing campaign signatures
+        
+        Args:
+            domain: Domain to check
+            
+        Returns:
+            Dictionary with campaign information
+        """
+        domain_clean = domain.replace('www.', '').lower()
+        
+        for campaign_id, signatures in self.campaign_signatures.items():
+            for signature in signatures:
+                if signature in domain_clean:
+                    logger.warning(f"Campaign match: {campaign_id}")
+                    return {
+                        'detected': True,
+                        'family': self._format_family_name(campaign_id),
+                        'campaign_id': campaign_id,
+                        'signature': signature
+                    }
+        
+        return {'detected': False}
+    
+    def _calculate_dna_similarity(self, domain: str, legitimate_domains: List[str]) -> Dict:
+        """
+        Calculate DNA sequence similarity using Needleman-Wunsch inspired approach
+        
+        Args:
+            domain: Domain to analyze
+            legitimate_domains: List of legitimate domains
+            
+        Returns:
+            Dictionary with similarity results
+        """
+        domain_clean = domain.replace('www.', '').lower()
+        
+        best_match = None
+        highest_similarity = 0.0
+        
+        for legit in legitimate_domains:
+            legit_clean = legit.replace('www.', '').lower()
+            
+            # Calculate sequence similarity
+            similarity = SequenceMatcher(None, domain_clean, legit_clean).ratio()
+            
+            if similarity > highest_similarity:
+                highest_similarity = similarity
+                best_match = legit
+        
+        # If very similar (but not exact), it's suspicious
+        if 0.7 < highest_similarity < 1.0:
+            logger.info(f"High DNA similarity: {domain} ↔ {best_match} ({highest_similarity:.3f})")
+        
+        return {
+            'similarity': round(highest_similarity, 3),
+            'closest_match': best_match
+        }
+    
+    def _calculate_evolutionary_distance(self, domain1: str, domain2: str) -> Optional[float]:
+        """
+        Calculate evolutionary distance between two domains
+        
+        Uses edit distance normalized by length
+        
+        Args:
+            domain1: First domain
+            domain2: Second domain
+            
+        Returns:
+            Evolutionary distance (0 = identical, higher = more different)
+        """
+        if not domain2:
+            return None
+        
+        # Calculate Levenshtein distance
+        import Levenshtein
+        distance = Levenshtein.distance(domain1, domain2)
+        
+        # Normalize by maximum length
+        max_len = max(len(domain1), len(domain2))
+        normalized_distance = distance / max_len if max_len > 0 else 0
+        
+        return round(normalized_distance * 10, 2)  # Scale to 0-10 range
+    
+    def _check_mutation_patterns(self, domain: str) -> bool:
+        """
+        Check for common mutation patterns
+        
+        Args:
+            domain: Domain to check
+            
+        Returns:
+            True if mutation patterns detected
+        """
+        # Common substitution patterns
+        mutations = {
+            'o': '0',
+            'i': '1',
+            'l': '1',
+            'a': '@',
+            's': '$',
+            'e': '3',
+            't': '7'
+        }
+        
+        # Check for character substitutions
+        for original, substitute in mutations.items():
+            if substitute in domain and original not in domain:
+                logger.info(f"Mutation pattern detected: {original} → {substitute}")
+                return True
+        
+        # Check for doubled characters
+        for i in range(len(domain) - 1):
+            if domain[i] == domain[i + 1] and domain[i].isalpha():
+                # Doubled consonant might be suspicious
+                if domain[i] not in 'aeiou':
+                    return True
+        
+        return False
+    
+    def _format_family_name(self, campaign_id: str) -> str:
+        """Format campaign ID into readable family name"""
+        return campaign_id.replace('-', ' ').title()
+    
+    def generate_mutation_variants(self, domain: str, max_variants: int = 10) -> List[str]:
+        """
+        Generate possible mutation variants of a domain
+        
+        Used for proactive detection
+        
+        Args:
+            domain: Original domain
+            max_variants: Maximum number of variants to generate
+            
+        Returns:
+            List of possible mutation variants
+        """
+        variants = []
+        domain_clean = domain.replace('www.', '')
+        
+        # Character omission
+        for i in range(len(domain_clean)):
+            variant = domain_clean[:i] + domain_clean[i+1:]
+            if variant:
+                variants.append(variant)
+        
+        # Character substitution with common typos
+        typo_map = {
+            'o': '0', 'i': '1', 'l': '1', 'a': '@',
+            's': '$', 'e': '3', 't': '7'
+        }
+        
+        for i, char in enumerate(domain_clean):
+            if char in typo_map:
+                variant = domain_clean[:i] + typo_map[char] + domain_clean[i+1:]
+                variants.append(variant)
+        
+        # Character addition (hyphenated versions)
+        variants.append(domain_clean.replace('.', '-secure.'))
+        variants.append(domain_clean.replace('.', '-verify.'))
+        variants.append(domain_clean.replace('.', '-login.'))
+        
+        # Return unique variants, limited to max
+        return list(set(variants))[:max_variants]
+    
+    def calculate_campaign_fingerprint(self, domains: List[str]) -> str:
+        """
+        Calculate a fingerprint for a group of related domains
+        
+        Used for identifying phishing campaigns
+        
+        Args:
+            domains: List of related domains
+            
+        Returns:
+            Campaign fingerprint (hash)
+        """
+        # Sort domains and concatenate
+        sorted_domains = sorted([d.lower() for d in domains])
+        combined = '|'.join(sorted_domains)
+        
+        # Generate hash
+        fingerprint = hashlib.sha256(combined.encode()).hexdigest()[:16]
+        
+        return fingerprint
+
+
+# Factory function
+def create_genetic_matcher(config: Config) -> GeneticURLMatcher:
+    """Create genetic matcher instance"""
+    return GeneticURLMatcher(config)

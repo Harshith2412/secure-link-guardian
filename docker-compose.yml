@@ -1,0 +1,116 @@
+# SecureLink Guardian - Docker Compose Configuration
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: securelink-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - ENV=production
+      - DEBUG=False
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - REDIS_ENABLED=True
+      - MONGODB_ENABLED=True
+    depends_on:
+      - redis
+      - mongodb
+    volumes:
+      - ./backend:/app/backend
+      - ./logs:/app/logs
+    networks:
+      - securelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: securelink-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - securelink-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: securelink-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - securelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: securelink-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=securelink_guardian
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - securelink-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Playwright Browser (for sandbox rendering)
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.40.0-focal
+    container_name: securelink-playwright
+    environment:
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    volumes:
+      - playwright-browsers:/ms-playwright
+    networks:
+      - securelink-network
+    restart: unless-stopped
+    command: tail -f /dev/null  # Keep container running
+
+networks:
+  securelink-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  playwright-browsers:
+    driver: local

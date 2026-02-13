@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# SecureLink Guardian - macOS Setup Script
+# Optimized for macOS with Python 3.13
+
+echo "🛡️  SecureLink Guardian - macOS Setup"
+echo "======================================"
+echo ""
+
+# Check Python
+echo "✓ Checking Python..."
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 not found"
+    echo "Install Python: brew install python@3.11"
+    exit 1
+fi
+
+PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+echo "✅ Python $PYTHON_VERSION"
+echo ""
+
+# Create virtual environment
+echo "✓ Creating virtual environment..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+    echo "✅ Virtual environment created"
+else
+    echo "✅ Virtual environment exists"
+fi
+
+# Activate
+source venv/bin/activate
+
+# Upgrade pip
+echo ""
+echo "✓ Upgrading pip..."
+pip install --upgrade pip setuptools wheel
+
+# Install dependencies
+echo ""
+echo "✓ Installing core dependencies..."
+echo "  (This takes 5-10 minutes - scikit-learn compiles from source)"
+echo ""
+
+# Use Python 3.13 compatible requirements
+if [ -f "requirements-py313.txt" ]; then
+    pip install -r requirements-py313.txt
+else
+    # Fallback - install core dependencies only
+    echo "⚠️  Installing minimal dependencies..."
+    pip install Flask==3.0.0 Flask-CORS==4.0.0 pydantic==2.5.0
+    pip install beautifulsoup4==4.12.2 requests==2.31.0
+    pip install dnspython==2.4.2 python-whois==0.8.0
+    pip install python-Levenshtein==0.23.0
+    pip install redis==5.0.1 pymongo==4.6.0
+    pip install pytest==7.4.3
+fi
+
+echo ""
+echo "✅ Dependencies installed"
+
+# Install Playwright (optional)
+echo ""
+echo "✓ Installing Playwright browsers (optional)..."
+playwright install chromium || echo "⚠️  Playwright install failed (optional)"
+
+# Create directories
+echo ""
+echo "✓ Creating directories..."
+mkdir -p logs backend/ml/models datasets/brand_logos tests/fixtures
+
+# Create .env
+echo ""
+echo "✓ Creating .env..."
+if [ ! -f ".env" ]; then
+    cp .env.example .env
+    echo "✅ .env created"
+fi
+
+# Generate datasets
+echo ""
+echo "✓ Generating datasets..."
+python3 scripts/generate_datasets.py
+
+echo ""
+echo "======================================"
+echo "✅ Setup Complete!"
+echo ""
+echo "🚀 Quick Start:"
+echo ""
+echo "  # Terminal 1 - Backend"
+echo "  source venv/bin/activate"
+echo "  python backend/app.py"
+echo ""
+echo "  # Terminal 2 - Frontend"  
+echo "  cd frontend"
+echo "  python3 -m http.server 8080"
+echo ""
+echo "  # Browser"
+echo "  open http://localhost:8080"
+echo ""
+echo "======================================"

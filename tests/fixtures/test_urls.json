@@ -1,0 +1,62 @@
+[
+  {
+    "url": "https://amaz0n-secure-login.com",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://paypa1-verify.com",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://micros0ft-account.com",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://app1e-id-support.com",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://bit.ly/phishing-test",
+    "expected_risk": "medium",
+    "label": 1
+  },
+  {
+    "url": "https://tinyurl.com/malicious",
+    "expected_risk": "medium",
+    "label": 1
+  },
+  {
+    "url": "https://secure-banking.tk",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://verify-account.ml",
+    "expected_risk": "high",
+    "label": 1
+  },
+  {
+    "url": "https://google.com",
+    "expected_risk": "low",
+    "label": 0
+  },
+  {
+    "url": "https://microsoft.com",
+    "expected_risk": "low",
+    "label": 0
+  },
+  {
+    "url": "https://amazon.com",
+    "expected_risk": "low",
+    "label": 0
+  },
+  {
+    "url": "https://github.com",
+    "expected_risk": "low",
+    "label": 0
+  }
+]
