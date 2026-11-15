@@ -29,7 +29,7 @@ html5lib==1.1
 # ============================================
 # DNS & Network Analysis
 # ============================================
-dnspython==2.4.2
+dnspython==2.9.2
 python-whois==0.8.0
 tldextract==5.1.0
 ipaddress==1.0.23
@@ -62,7 +62,7 @@ scipy==1.11.4
 # ============================================
 transformers==4.36.0
 torch==2.1.1
-nltk==3.8.1
+nltk==3.10.4
 textblob==0.17.1
 spacy==3.7.2
 textstat==0.7.3
@@ -71,7 +71,7 @@ textstat==0.7.3
 # Computer Vision
 # ============================================
 opencv-python==4.8.1.78
-Pillow==10.1.0
+Pillow==13.0.0
 imagehash==4.3.1
 
 # ============================================
@@ -144,3 +144,4 @@ diskcache==5.6.3
 click==8.1.7
 tqdm==4.66.1
 rich==13.7.0
+soupsieve>=4.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
